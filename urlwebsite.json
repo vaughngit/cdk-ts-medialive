@@ -1,5 +1,7 @@
 {
   "TheMediaLiveStreamStack": {
-    "mediapackageurlstream": "https://3860af3e8e3fbfdb.mediapackage.us-east-2.amazonaws.com/out/v1/2eb1dc421fc5415589cc3c847325e87c/index.m3u8"
+    "medialivechannelid": "arn:aws:medialive:us-east-2:796072252262:channel:6196235",
+    "mediapackageurlstream": "https://188a2110c0c0aa3d.mediapackage.us-east-2.amazonaws.com/out/v1/4716097999d2470c86243002944ee908/index.m3u8",
+    "mediapackageinputdestinations": "rtmp://3.129.227.40:1935/test/channel"
   }
 }

@@ -5,9 +5,10 @@ import * as medialive from 'aws-cdk-lib/aws-medialive';
 import * as mediapackage from 'aws-cdk-lib/aws-mediapackage';
 import * as mediaconnect from 'aws-cdk-lib/aws-mediaconnect';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import { Effect, PolicyDocument, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 
 const configuration = {
-  "id_channel": "test-channel",
+  "id_channel": "demo-channel",
   "ip_sg_input": "0.0.0.0/0",
   "stream_name": "test/channel",
   "hls_segment_duration_seconds": 5,
@@ -17,48 +18,6 @@ const configuration = {
   "hls_stream_order": "ORIGINAL"
 }
 
-// https://docs.aws.amazon.com/mediaconnect/latest/ug/security_iam_service-with-iam.html
-const INLINE_POLICY = {
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": [
-      "logs:CreateLogGroup",
-      "logs:CreateLogStream",
-      "logs:PutLogEvents",
-      "logs:DescribeLogStreams",
-      "logs:DescribeLogGroups"
-    ],
-    "Resource": "arn:aws:logs:*:*:*"
-  },
-  {
-    "Effect": "Allow",
-    "Action": [
-      "mediaconnect:ManagedDescribeFlow",
-      "mediaconnect:ManagedAddOutput",
-      "mediaconnect:ManagedRemoveOutput"
-    ],
-    "Resource": "*"
-  },
-  {
-    "Effect": "Allow",
-    "Action": [
-      "ec2:describeSubnets",
-      "ec2:describeNetworkInterfaces",
-      "ec2:createNetworkInterface",
-      "ec2:createNetworkInterfacePermission",
-      "ec2:deleteNetworkInterface",
-      "ec2:deleteNetworkInterfacePermission",
-      "ec2:describeSecurityGroups"
-    ],
-    "Resource": "*"
-  },
-  {
-    "Effect": "Allow",
-    "Action": ["mediapackage:DescribeChannel"],
-    "Resource": "*"
-  }]
-}
 
 export class TheMediaLiveStreamStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -95,14 +54,6 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
       }
     }
     
-    
-    // const hls_endpoint = new mediapackage.CfnOriginEndpoint(scope = this,
-    //   id = `endpoint${configuration["id_channel"]}`, {
-    //   channelId: configuration["id_channel"],
-    //   id: `endpoint${configuration["id_channel"]}`,
-    //   hlsPackage
-    // });
-
     const hls_endpoint = new mediapackage.CfnOriginEndpoint(scope = this,
       id = `endpoint${configuration["id_channel"]}`, {
       //channelId: configuration["id_channel"],
@@ -134,12 +85,22 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
     */
     const medialive_input = new medialive.CfnInput(scope = this,
       id = "media-input-channel", {
-      name: `input- ${configuration["id_channel"]}`,
+      name: `input-${configuration["id_channel"]}`,
       //type: "RTMP_PUSH",
       type: "RTMP_PUSH",
       inputSecurityGroups: [security_groups_input.ref],
       destinations: [{ streamName: configuration["stream_name"] }]
     });
+
+    // // Output the url stream to player
+    new cdk.CfnOutput(this, "media-package-input-destinations", {
+      value: cdk.Fn.select(0, medialive_input.attrDestinations).toString()
+    });
+
+    // new cdk.CfnOutput(this, "media-package-input-sources", {
+    //   value: cdk.Fn.select(0,  medialive_input.attrSources).toString()
+    // });
+ 
 
     /*
     * Media Live Channel Block
@@ -151,13 +112,73 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal('medialive.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('AWSElementalMediaLiveFullAccess'),
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonS3FullAccess')
       ],
-      inlinePolicies: { "medialivecustom": iam.PolicyDocument.fromJson(INLINE_POLICY) }
+      inlinePolicies: {
+        MediaLiveInlinePolicy: new PolicyDocument({
+          assignSids:true,
+          statements: [
+            new PolicyStatement({
+              effect: Effect.ALLOW,
+              resources: ["arn:aws:logs:*:*:*"],
+              actions: [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "logs:DescribeLogStreams",
+                "logs:DescribeLogGroups"
+              ],
+            }),
+            new PolicyStatement({
+              effect: Effect.ALLOW,
+              resources: ["*"],
+              actions: [
+                "mediaconnect:ManagedDescribeFlow",
+                "mediaconnect:ManagedAddOutput",
+                "mediaconnect:ManagedRemoveOutput"
+              ],
+            }),
+            new PolicyStatement({
+              effect: Effect.ALLOW,
+              resources: ["*"],
+              actions: [
+                "ec2:describeSubnets",
+                "ec2:describeNetworkInterfaces",
+                "ec2:createNetworkInterface",
+                "ec2:createNetworkInterfacePermission",
+                "ec2:deleteNetworkInterface",
+                "ec2:deleteNetworkInterfacePermission",
+                "ec2:describeSecurityGroups"
+              ],
+            }),
+            new PolicyStatement({
+              effect: Effect.ALLOW,
+              resources: ["*"],
+              actions: [
+                "mediapackage:DescribeChannel"            
+              ],
+            }),
+            new PolicyStatement({
+              effect: Effect.ALLOW,
+              resources: [
+                "arn:aws:s3:::*",
+                "arn:aws:s3:::*/*"
+              ],
+              actions: [
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"           
+              ],
+            }),
+          ],
+        })
+      }
     });
 
-    // Channel
+    // MediaLive Channel
     var channelLive = new medialive.CfnChannel(scope = this, id = `media-live-channel-${configuration["id_channel"]}`, {
+    //let channelLive = new MyChannel(scope = this, id = `media-live-channel-${configuration["id_channel"]}`, {
+      //thumbnailState: 'AUTO',
       channelClass: "SINGLE_PIPELINE",
       name: configuration["id_channel"],
       inputSpecification: {
@@ -328,6 +349,25 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
       roleArn: iamRole.roleArn
     });
 
+ 
+        // Output the url stream to player
+        new cdk.CfnOutput(this, "media-live-channel-id", {
+          value: channelLive.attrArn
+        });
+    
+
+   //const cfnChannelLive = channelLive.node.defaultChild as medialive.CfnChannel
+ //  const cfnChannelLive = channelLive.node.defaultChild as any
+   
+  //  cfnChannelLive.encoderSettings! = {
+  //   timecodeConfig: {
+  //     source: "EMBEDDED"
+  //   },
+  //   thumbnailConfiguration: {
+  //     state: "AUTO"
+  //    },
+  //  }
+
     // We need to add dependency because CFN must wait channel creation finish before starting the endpoint creation  
     
     //var mediadep = new cdk.ConcreteDependable();
@@ -340,3 +380,18 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
   }
 
 }
+
+// interface MyChannelProps extends medialive.CfnChannelProps {
+//   thumbnailState?: string;
+// }
+
+// export class MyChannel extends medialive.CfnChannel {
+
+//   constructor(scope: Construct, id: string, props: MyChannelProps) {
+//     super(scope, id, props);
+
+//     if (props.thumbnailState) {
+//       this.addPropertyOverride('encoderSettings.thumbnailConfiguration.state', props.thumbnailState);
+//     }
+//   }
+// }
