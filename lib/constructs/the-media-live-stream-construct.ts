@@ -17,7 +17,7 @@ export interface IStackProps extends StackProps{
 
 export class TheMediaLiveStreamConstructs extends Construct {
 
- // public readonly urlStream: string 
+  public readonly mediaPackageUrlStream: string 
   public readonly inputUri: string 
   public readonly mediaLiveChannelId: string 
 
@@ -341,16 +341,17 @@ export class TheMediaLiveStreamConstructs extends Construct {
     hls_endpoint.addDependency(channel)
     channelLive.addDependency(channel)
 
-    // this.urlStream = hls_endpoint.attrUrl
-    // console.log("hls_endpoint.attrUrl: ", hls_endpoint.attrUrl)
-
+  
     this.mediaLiveChannelId = channelLive.attrArn
-   // console.log("channelLive.attrArn: ", channelLive.attrArn)
-  
-  
-   const destInput = Fn.select(0, medialive_input.attrDestinations).toString()
-   // this.inputUri = destInput
-   this.inputUri = Fn.select(0, medialive_input.attrDestinations)
+
+    this.inputUri = Fn.select(0, medialive_input.attrDestinations)
+
+    this.mediaPackageUrlStream = hls_endpoint.attrUrl
+
+      //  // Output the url stream to player
+      //  new CfnOutput(scope = this, id = "media-package-url-stream", {
+      //   value: `https://hlsjs.video-dev.org/demo/?src=${hls_endpoint.attrUrl}`
+      // });
   
 
     Tags.of(this).add("environment", props.environment)

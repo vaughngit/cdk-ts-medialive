@@ -1,6 +1,7 @@
 {
   "MediaLive-demo": {
     "medialivechannelid": "9039950",
+    "webPlayerurlstream": "https://hlsjs.video-dev.org/demo/?src=https://188a2110c0c0aa3d.mediapackage.us-east-2.amazonaws.com/out/v1/cc67a4ae05b948ba9a64323a31d2bffe/index.m3u8",
     "mediapackageurlinputchannel": "rtmp://3.140.34.55:1935/demo/channel"
   }
 }

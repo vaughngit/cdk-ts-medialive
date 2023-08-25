@@ -13,14 +13,22 @@ export class MedialiveStack extends Stack {
   constructor(scope: Construct, id: string, props: IStackProps) {
     super(scope, id, props);
 
-    const {inputUri, mediaLiveChannelId} = new TheMediaLiveStreamConstructs(this, 'MediaLiveStreamConstructs', {...props});
+    const {mediaPackageUrlStream, inputUri, mediaLiveChannelId} = new TheMediaLiveStreamConstructs(this, 'MediaLiveStreamConstructs', {...props});
     //new TheMediaLiveStreamWebsiteStack(app, 'TheMediaLiveStreamWebsiteStack', {env}).addDependency(mediaChannel);
 
-    const streamKey = inputUri.substring(inputUri.lastIndexOf("/") + 1) // extracts the stream key
-    console.log("streamKey: ", streamKey)
-    // Output the stream key
+   
+   
+      // Output the url stream to player
+      new CfnOutput(scope = this, id = "webPlayer-url-stream", {
+      value: `https://hlsjs.video-dev.org/demo/?src=${mediaPackageUrlStream}`
+    });
+      
+   
+   
+    const inputChannel = inputUri.substring(inputUri.lastIndexOf("/") + 1) // extracts the stream key
+    // Output the input channel
     new CfnOutput(this, "media-package-url-input-channel", {
-      value: streamKey
+      value: inputChannel
     });
 
 
@@ -30,6 +38,13 @@ export class MedialiveStack extends Stack {
       new CfnOutput(this, "media-live-channel-id", {
         value: channelId
       });
+
+
+      // Output the MediaLive Console 
+      new CfnOutput(this, "media-live-console", {
+        value: `https://${this.region}.console.aws.amazon.com/medialive/home?region=${this.region}#/`
+      });
+      
 
   }
   

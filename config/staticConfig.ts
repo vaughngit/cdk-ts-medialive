@@ -6,8 +6,8 @@ export const config ={
 
 
 export const mediaConfiguration = {
-    id_channel: `${config.environment}-channel`,
     ip_sg_input: "0.0.0.0/0",  // Input Security Group: update with your public ip address
+    id_channel: `${config.environment}-channel`,
     stream_name: `${config.environment}/channel`,
     hls_segment_duration_seconds: 5,
     hls_playlist_window_seconds: 60,
