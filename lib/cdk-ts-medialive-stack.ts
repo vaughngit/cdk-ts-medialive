@@ -1,16 +1,37 @@
-import * as cdk from 'aws-cdk-lib';
+import { CfnOutput, Fn, Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
+import { TheMediaLiveStreamConstructs } from './constructs/the-media-live-stream-construct';
 
-export class CdkTsMedialiveStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+export interface IStackProps extends StackProps{
+  environment: string; 
+  costcenter: string; 
+  solutionName: string; 
+}
+
+
+export class MedialiveStack extends Stack {
+  constructor(scope: Construct, id: string, props: IStackProps) {
     super(scope, id, props);
 
-    // The code that defines your stack goes here
+    const {inputUri, mediaLiveChannelId} = new TheMediaLiveStreamConstructs(this, 'MediaLiveStreamConstructs', {...props});
+    //new TheMediaLiveStreamWebsiteStack(app, 'TheMediaLiveStreamWebsiteStack', {env}).addDependency(mediaChannel);
 
-    // example resource
-    // const queue = new sqs.Queue(this, 'CdkTsMedialiveQueue', {
-    //   visibilityTimeout: cdk.Duration.seconds(300)
-    // });
+    const streamKey = inputUri.substring(inputUri.lastIndexOf("/") + 1) // extracts the stream key
+    console.log("streamKey: ", streamKey)
+    // Output the stream key
+    new CfnOutput(this, "media-package-url-input-channel", {
+      value: streamKey
+    });
+
+
+      const channelId = Fn.select(6, Fn.split(':', mediaLiveChannelId)); // extracts channel id from the arn 
+      console.log("channelId: ", channelId)
+      // Output the url stream to player
+      new CfnOutput(this, "media-live-channel-id", {
+        value: channelId
+      });
+
   }
+  
+  
 }

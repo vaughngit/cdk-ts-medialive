@@ -6,29 +6,30 @@ import * as mediapackage from 'aws-cdk-lib/aws-mediapackage';
 import * as mediaconnect from 'aws-cdk-lib/aws-mediaconnect';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Effect, PolicyDocument, PolicyStatement } from 'aws-cdk-lib/aws-iam';
+import { CfnOutput, Fn, StackProps, Tags } from 'aws-cdk-lib';
+import {config, mediaConfiguration} from '../../config'
 
-const configuration = {
-  "id_channel": "demo-channel",
-  "ip_sg_input": "0.0.0.0/0",
-  "stream_name": "test/channel",
-  "hls_segment_duration_seconds": 5,
-  "hls_playlist_window_seconds": 60,
-  "hls_max_video_bits_per_second": 2147483647,
-  "hls_min_video_bits_per_second": 0,
-  "hls_stream_order": "ORIGINAL"
-}
+export interface IStackProps extends StackProps{
+   environment: string; 
+   costcenter: string; 
+   solutionName: string; 
+ }
 
+export class TheMediaLiveStreamConstructs extends Construct {
 
-export class TheMediaLiveStreamStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+ // public readonly urlStream: string 
+  public readonly inputUri: string 
+  public readonly mediaLiveChannelId: string 
+
+  constructor(scope: Construct, id: string, props: IStackProps) {
+    super(scope, id);
 
     /*
     * First step: Create MediaPackage Channel
     */
-    const channel = new mediapackage.CfnChannel(scope = this,id = `media-package-channel-${configuration["id_channel"]}`, {
-      id: configuration["id_channel"],
-      description: `Channel ${configuration["id_channel"]}`
+    const channel = new mediapackage.CfnChannel(scope = this,id = `media-package-channel-${mediaConfiguration["id_channel"]}`, {
+      id: mediaConfiguration["id_channel"],
+      description: `Channel ${mediaConfiguration["id_channel"]}`
     });
 
     // const testChannel = new mediaconnect.CfnFlow(this,"mediaConnectTest",{
@@ -45,39 +46,32 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
     * Second step: Add a HLS endpoint to MediaPackage Channel and output the URL of this endpoint
     */
     const hlsPackage: mediapackage.CfnOriginEndpoint.HlsPackageProperty = {
-      segmentDurationSeconds: configuration["hls_segment_duration_seconds"],
-      playlistWindowSeconds: configuration["hls_playlist_window_seconds"],
+      segmentDurationSeconds: mediaConfiguration["hls_segment_duration_seconds"],
+      playlistWindowSeconds: mediaConfiguration["hls_playlist_window_seconds"],
       streamSelection: {
-        minVideoBitsPerSecond: configuration["hls_min_video_bits_per_second"],
-        maxVideoBitsPerSecond: configuration["hls_max_video_bits_per_second"],
-        streamOrder: configuration["hls_stream_order"]
+        minVideoBitsPerSecond: mediaConfiguration["hls_min_video_bits_per_second"],
+        maxVideoBitsPerSecond: mediaConfiguration["hls_max_video_bits_per_second"],
+        streamOrder: mediaConfiguration["hls_stream_order"]
       }
     }
     
     const hls_endpoint = new mediapackage.CfnOriginEndpoint(scope = this,
-      id = `endpoint${configuration["id_channel"]}`, {
+      id = `endpoint${mediaConfiguration["id_channel"]}`, {
       //channelId: configuration["id_channel"],
       channelId: channel.id,
-      id: `endpoint${configuration["id_channel"]}`,
+      id: `endpoint${mediaConfiguration["id_channel"]}`,
       hlsPackage
     });
 
-    // Output the url stream to player
-    new cdk.CfnOutput(scope = this, id = "media-package-url-stream", {
-      value: hls_endpoint.attrUrl
-    });
+    
 
     /*
     * Third step: Create MediaLive SG, MediaLive Input and MediaLive Channel
     */
 
-    /*
-    * Input Security Group
-    * Allow 0.0.0.0/0 - Modify it if you want
-    */
     const security_groups_input = new medialive.CfnInputSecurityGroup(scope = this,
       id = "media-live-sg-input", {
-      whitelistRules: [{ "cidr": configuration["ip_sg_input"] }]
+      whitelistRules: [{ "cidr": mediaConfiguration["ip_sg_input"] }]
     });
 
     /*
@@ -85,22 +79,15 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
     */
     const medialive_input = new medialive.CfnInput(scope = this,
       id = "media-input-channel", {
-      name: `input-${configuration["id_channel"]}`,
+      name: `input-${mediaConfiguration["id_channel"]}`,
       //type: "RTMP_PUSH",
       type: "RTMP_PUSH",
       inputSecurityGroups: [security_groups_input.ref],
-      destinations: [{ streamName: configuration["stream_name"] }]
+      destinations: [{ streamName: mediaConfiguration["stream_name"] }]
     });
 
-    // // Output the url stream to player
-    new cdk.CfnOutput(this, "media-package-input-destinations", {
-      value: cdk.Fn.select(0, medialive_input.attrDestinations).toString()
-    });
-
-    // new cdk.CfnOutput(this, "media-package-input-sources", {
-    //   value: cdk.Fn.select(0,  medialive_input.attrSources).toString()
-    // });
  
+    
 
     /*
     * Media Live Channel Block
@@ -176,11 +163,9 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
     });
 
     // MediaLive Channel
-    var channelLive = new medialive.CfnChannel(scope = this, id = `media-live-channel-${configuration["id_channel"]}`, {
-    //let channelLive = new MyChannel(scope = this, id = `media-live-channel-${configuration["id_channel"]}`, {
-      //thumbnailState: 'AUTO',
+    var channelLive = new medialive.CfnChannel(this, `media-live-channel-${mediaConfiguration["id_channel"]}`, {
       channelClass: "SINGLE_PIPELINE",
-      name: configuration["id_channel"],
+      name: mediaConfiguration["id_channel"],
       inputSpecification: {
         codec: "AVC",
         maximumBitrate: "MAX_20_MBPS",
@@ -193,7 +178,7 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
       destinations: [{
         id: "media-destination",
         mediaPackageSettings: [{
-          channelId: configuration["id_channel"]
+          channelId: mediaConfiguration["id_channel"]
         }]
       }],
       encoderSettings: {
@@ -349,49 +334,29 @@ export class TheMediaLiveStreamStack extends cdk.Stack {
       roleArn: iamRole.roleArn
     });
 
- 
-        // Output the url stream to player
-        new cdk.CfnOutput(this, "media-live-channel-id", {
-          value: channelLive.attrArn
-        });
-    
 
-   //const cfnChannelLive = channelLive.node.defaultChild as medialive.CfnChannel
- //  const cfnChannelLive = channelLive.node.defaultChild as any
-   
-  //  cfnChannelLive.encoderSettings! = {
-  //   timecodeConfig: {
-  //     source: "EMBEDDED"
-  //   },
-  //   thumbnailConfiguration: {
-  //     state: "AUTO"
-  //    },
-  //  }
 
-    // We need to add dependency because CFN must wait channel creation finish before starting the endpoint creation  
-    
-    //var mediadep = new cdk.ConcreteDependable();
-    //mediadep.add(channel);
-    //hls_endpoint.node.addDependency(mediadep);
-    //channelLive.node.addDependency(mediadep);
+
+
     hls_endpoint.addDependency(channel)
     channelLive.addDependency(channel)
+
+    // this.urlStream = hls_endpoint.attrUrl
+    // console.log("hls_endpoint.attrUrl: ", hls_endpoint.attrUrl)
+
+    this.mediaLiveChannelId = channelLive.attrArn
+   // console.log("channelLive.attrArn: ", channelLive.attrArn)
+  
+  
+   const destInput = Fn.select(0, medialive_input.attrDestinations).toString()
+   // this.inputUri = destInput
+   this.inputUri = Fn.select(0, medialive_input.attrDestinations)
+  
+
+    Tags.of(this).add("environment", props.environment)
+    Tags.of(this).add("solution", props.solutionName)
+    Tags.of(this).add("costcenter", props.costcenter)
 
   }
 
 }
-
-// interface MyChannelProps extends medialive.CfnChannelProps {
-//   thumbnailState?: string;
-// }
-
-// export class MyChannel extends medialive.CfnChannel {
-
-//   constructor(scope: Construct, id: string, props: MyChannelProps) {
-//     super(scope, id, props);
-
-//     if (props.thumbnailState) {
-//       this.addPropertyOverride('encoderSettings.thumbnailConfiguration.state', props.thumbnailState);
-//     }
-//   }
-// }

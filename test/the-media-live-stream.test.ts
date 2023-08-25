@@ -1,6 +1,6 @@
 import { expect as expectCDK, matchTemplate, MatchStyle, haveResourceLike } from '@aws-cdk/assert';
 import * as cdk from '@aws-cdk/core';
-import * as TheMediaLiveStream from '../lib/the-media-live-stream-stack';
+import * as TheMediaLiveStream from '../lib/constructs/the-media-live-stream-construct';
 
 test('MediaPackage Channel exists', () => {
   const app = new cdk.App();

@@ -1,7 +1,6 @@
 {
-  "TheMediaLiveStreamStack": {
-    "medialivechannelid": "arn:aws:medialive:us-east-2:796072252262:channel:6196235",
-    "mediapackageurlstream": "https://188a2110c0c0aa3d.mediapackage.us-east-2.amazonaws.com/out/v1/4716097999d2470c86243002944ee908/index.m3u8",
-    "mediapackageinputdestinations": "rtmp://3.129.227.40:1935/test/channel"
+  "MediaLive-demo": {
+    "medialivechannelid": "9039950",
+    "mediapackageurlinputchannel": "rtmp://3.140.34.55:1935/demo/channel"
   }
 }
