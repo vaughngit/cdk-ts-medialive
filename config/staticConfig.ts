@@ -6,7 +6,7 @@ export const config ={
 
 
 export const mediaConfiguration = {
-    ip_sg_input: "0.0.0.0/0",  // Input Security Group: update with your public ip address
+    ip_sg_input: "0.0.0.0/0",  // Input Security Group: update with your public ip address: curl http://checkip.amazonaws.com
     id_channel: `${config.environment}-channel`,
     stream_name: `${config.environment}/channel`,
     hls_segment_duration_seconds: 5,

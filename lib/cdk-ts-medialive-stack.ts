@@ -46,6 +46,10 @@ export class MedialiveStack extends Stack {
       });
       
 
+      new CfnOutput(this, "start-media-live-cli", {
+        value: `aws medialive start-channel --channel-id ${channelId} --profile dev --region ${this.region} `
+      });
+
   }
   
   

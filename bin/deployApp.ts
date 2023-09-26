@@ -7,8 +7,8 @@ import {config} from '../config';
 
 
 const account = process.env.CDK_DEFAULT_ACCOUNT;
-const region = process.env.CDK_DEFAULT_REGION
-//const region = 'us-west-2' // static region configuration to target region different from default region configured in cli profile
+//const region = process.env.CDK_DEFAULT_REGION
+const region = 'us-west-2' // static region configuration to target region different from default region configured in cli profile
 const env = {account, region}; 
 
 

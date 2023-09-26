@@ -54,5 +54,5 @@
     "@aws-cdk/core:includePrefixInUniqueNameGeneration": true,
     "@aws-cdk/aws-opensearchservice:enableOpensearchMultiAzWithStandby": true
   },
-  "outputsFile": "urlwebsite.json"
+  "outputsFile": "output.json"
 }
